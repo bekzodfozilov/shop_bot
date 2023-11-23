@@ -1,5 +1,4 @@
 import datetime
-import json
 import random
 import string
 
@@ -121,7 +120,7 @@ async def location_def(message: types.Message, state: FSMContext):
         else:
             await message.answer('Ваш заказ одобрен\nВ течение 30 минут вам обратиться наш менеджер',
                                  reply_markup=menu_markup_def)
-        s = ''
+        s = str()
         money = int()
         i = my_basket(str(message.from_user.id))
         delete_item(message.from_user.id)
@@ -169,8 +168,6 @@ async def allow_promocod_def(message: types.Message):
 
 @dp.message_handler(text='❌ Не использовать', state=Oformit.allow_promocod)
 async def allow_not_promocod_def(message: types.Message, state: FSMContext):
-    latitude = 0
-    longitude = 0
     async with state.proxy() as data:
         latitude = data['latitude']
         longitude = data['longitude']
@@ -181,7 +178,7 @@ async def allow_not_promocod_def(message: types.Message, state: FSMContext):
     else:
         await message.answer('Ваш заказ одобрен\nВ течение 30 минут вам обратиться наш менеджер',
                              reply_markup=menu_markup_def)
-    s = ''
+    s = str()
     money = int()
     i = my_basket(str(message.from_user.id))
     delete_item(message.from_user.id)
