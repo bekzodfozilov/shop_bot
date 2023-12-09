@@ -9,7 +9,7 @@ from aiogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
 import markups.defaultkeyboard.location_request
 from data.config import ADMINS
 from loader import dp, bot
-from markups.defaultkeyboard.date_markup import date_markup
+from markups.defaultkeyboard.date_markup import date_markup, date_list
 from markups.defaultkeyboard.menu_markup import menu_markup_def, menu_markup_def_admin
 from query_data.config import my_basket, oformlenie, delete_item, get_oformleniya, minus_count_item, add_promokod, \
     delete_korzina_item, get_promokod, delete_promokod
@@ -18,84 +18,66 @@ from states.oformleniye import Oformit
 
 @dp.message_handler(text='📑 Оформить заказ')
 async def zakaz_oformit(message: types.Message):
+    print(datetime.datetime.now().time().hour)
+    await message.delete()
     i = my_basket(str(message.from_user.id))
-    pul = 0
     s = ''
-    money = []
+    money = int()
     for j in i:
         s += f"{j[1]}\n{j[3]}KZT x {j[4]} = {j[3] * j[4]}KZT\n{j[2]}\n\n"
-        money.append(j[3] * j[4])
-    for i in money:
-        pul += i
-    if pul == 0:
-        if str(message.from_user.id) in ADMINS:
-            await message.answer('Вы не можете Оформить заказ по скольу ваша корзина пусто!',
-                                 reply_markup=menu_markup_def_admin)
-        else:
-            await message.answer('Вы не можете Оформить заказ по скольу ваша корзина пусто!',
-                                 reply_markup=menu_markup_def)
+        money += (j[3] * j[4])
+    await message.answer(f"{s}Итог - {money}KZT")
+    await message.answer(f"Выберите Дату для заказа", reply_markup=date_markup)
+    await Oformit.date.set()
+
+
+@dp.message_handler(text="🔚 Главный меню", state=Oformit.date)
+async def back_menu(message: types.Message, state: FSMContext):
+    if str(message.from_id) in ADMINS:
+        await message.answer("Главный меню", reply_markup=menu_markup_def_admin)
     else:
-        await message.answer(f"{s}Итог - {pul}KZT")
-        await message.answer(f"Выберите Дату для заказа", reply_markup=date_markup)
-        await Oformit.date.set()
+        await message.answer("Главный меню", reply_markup=menu_markup_def)
+    await state.finish()
+
+
+@dp.message_handler(text=date_list, state=Oformit.date)
+async def date_def(message: types.Message, state: FSMContext):
+    date = message.text
+    await state.update_data(
+        {'date': date})
+    await message.answer(f"Время доставки", reply_markup=time_markups(date))
+    await Oformit.next()
 
 
 @dp.message_handler(state=Oformit.date)
-async def date_def(message: types.Message, state: FSMContext):
-    if message.text == '🔚 Главный меню':
-        await state.finish()
-        await message.delete()
-        if str(message.from_user.id) in ADMINS:
-            await message.answer('Главный меню', reply_markup=menu_markup_def_admin)
-        else:
-            await message.answer('Главный меню', reply_markup=menu_markup_def)
-    else:
-        date = message.text
-        await state.update_data(
-            {'date': date})
-        from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-        markup = ReplyKeyboardMarkup(resize_keyboard=True)
+async def not_date(message: types.Message):
+    await message.answer("Пожалуйста выберите дату а не введите сами!!!", reply_markup=date_markup)
 
-        if date == str(datetime.datetime.now().date()):
-            for i in range(10, 22):
-                temp = 1
-                if i > int(str(datetime.datetime.now().time())[:2]):
-                    if temp % 2 != 0 and temp % 3 != 0:
-                        button = KeyboardButton(text=str(i + 1) + ':00')
-                        markup.insert(button)
-                    elif temp % 2 == 0:
-                        button1 = KeyboardButton(text=str(i + 1) + ':00')
-                        markup.insert(button1)
-                    elif temp % 2 != 0 and temp % 3 == 0:
-                        button2 = KeyboardButton(text=str(i + 1) + ':00')
-                        markup.insert(button2)
-                    temp += 1
-        else:
-            for i in range(10, 22):
-                temp = 1
-                if temp % 2 != 0 and temp % 3 != 0:
-                    button = KeyboardButton(text=str(i + 1) + ':00')
-                    markup.insert(button)
-                elif temp % 2 == 0:
-                    button1 = KeyboardButton(text=str(i + 1) + ':00')
-                    markup.insert(button1)
-                elif temp % 2 != 0 and temp % 3 == 0:
-                    button2 = KeyboardButton(text=str(i + 1) + ':00')
-                    markup.insert(button2)
-                temp += 1
-        await message.answer(f"Время доставки", reply_markup=markup)
-        await Oformit.next()
+
+time_list = []
+for y in range(10, 22):
+    time_list.append(str(y + 1) + ':00')
+
+
+@dp.message_handler(text=time_list, state=Oformit.time)
+async def time_def(message: types.Message, state: FSMContext):
+    time = message.text
+    await state.update_data({'time': time})
+    await message.answer('Отправьте свою локацию', reply_markup=markups.defaultkeyboard.location_request.location_markup)
+    await Oformit.next()
+
+
+@dp.message_handler(text='⬅️ Назад', state=Oformit.time)
+async def back_time(message: types.Message):
+    await message.answer(f"Выберите Дату для заказа", reply_markup=date_markup)
+    await Oformit.date.set()
 
 
 @dp.message_handler(state=Oformit.time)
-async def time_def(message: types.Message, state: FSMContext):
-    time = message.text
-    await state.update_data(
-        {'time': time}
-    )
-    await message.answer('Отправьте свою локацию',
-                         reply_markup=markups.defaultkeyboard.location_request.location_markup)
-    await Oformit.next()
+async def not_time(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        date = data['date']
+    await message.answer("Пожалуйста выберите времю а не введите сами!!!", reply_markup=time_markups(date))
 
 
 @dp.message_handler(state=Oformit.location, content_types='location')
@@ -137,12 +119,21 @@ async def location_def(message: types.Message, state: FSMContext):
             oformlenie(time, date, message.from_user.id, money, s, latitude, longitude)
         item = get_oformleniya()
         await bot.send_message(chat_id=ADMINS[0],
-                               text=f"Заказ был одобрен на дату - {item[2]}, {item[1]}\n\n{item[5]}\nИтог - {item[3]}\nАкк - <a href='tg://user?id={item[4]}'>{message.from_user.first_name}</a> @{message.from_user.username}", disable_web_page_preview=True)
+                               text=f"Заказ был одобрен на дату - {item[2]}, {item[1]}\n\n{item[5]}\nИтог - {item[3]}\nАкк - <a href='tg://user?id={item[4]}'>{message.from_user.first_name}</a> @{message.from_user.username}",
+                               disable_web_page_preview=True)
         await bot.send_location(chat_id=ADMINS[0],
                                 latitude=item[6],
                                 longitude=item[7],
                                 reply_markup=menu_markup_def_admin)
         await state.finish()
+
+
+@dp.message_handler(text='⬅️ Назад', state=Oformit.location)
+async def back_to_time(message: types.Message, state: FSMContext):
+    async with state.proxy() as data:
+        date = data['date']
+    await message.answer(f"Время доставки", reply_markup=time_markups(date))
+    await Oformit.time.set()
 
 
 @dp.message_handler(state=Oformit.location)
@@ -195,7 +186,8 @@ async def allow_not_promocod_def(message: types.Message, state: FSMContext):
         oformlenie(time, date, message.from_user.id, money, s, latitude, longitude)
     item = get_oformleniya()
     await bot.send_message(chat_id=ADMINS[0],
-                           text=f"Заказ был одобрен на дату - {item[2]}, {item[1]}\n\n{item[5]}\nИтог - {item[3]}\nАкк - <a href='tg://user?id={item[4]}'>{message.from_user.first_name}</a> @{message.from_user.username}", disable_web_page_preview=True)
+                           text=f"Заказ был одобрен на дату - {item[2]}, {item[1]}\n\n{item[5]}\nИтог - {item[3]}\nАкк - <a href='tg://user?id={item[4]}'>{message.from_user.first_name}</a> @{message.from_user.username}",
+                           disable_web_page_preview=True)
     await bot.send_location(chat_id=ADMINS[0],
                             latitude=item[6],
                             longitude=item[7],
@@ -234,13 +226,16 @@ async def promocod_def(message: types.Message, state: FSMContext):
                 insert_promo(money, message)
                 item = get_oformleniya()
                 if str(message.from_user.id) in ADMINS:
-                    await message.answer('Промокод Успешно использован\nВаш заказ одобрен\nВ течение 30 минут вам обратиться наш менеджер',
-                                         reply_markup=menu_markup_def_admin)
+                    await message.answer(
+                        'Промокод Успешно использован\nВаш заказ одобрен\nВ течение 30 минут вам обратиться наш менеджер',
+                        reply_markup=menu_markup_def_admin)
                 else:
-                    await message.answer('Промокод Успешно использован\nВаш заказ одобрен\nВ течение 30 минут вам обратиться наш менеджер',
-                                         reply_markup=menu_markup_def)
+                    await message.answer(
+                        'Промокод Успешно использован\nВаш заказ одобрен\nВ течение 30 минут вам обратиться наш менеджер',
+                        reply_markup=menu_markup_def)
                 await bot.send_message(chat_id=ADMINS[0],
-                                       text=f"Заказ был одобрен на дату - {item[2]}, {item[1]}\n\n{item[5]}\nИтог - {item[3]}\nАкк - <a href='tg://user?id={item[4]}'>{message.from_user.first_name}</a> @{message.from_user.username}", disable_web_page_preview=True)
+                                       text=f"Заказ был одобрен на дату - {item[2]}, {item[1]}\n\n{item[5]}\nИтог - {item[3]}\nАкк - <a href='tg://user?id={item[4]}'>{message.from_user.first_name}</a> @{message.from_user.username}",
+                                       disable_web_page_preview=True)
                 await bot.send_location(chat_id=ADMINS[0],
                                         latitude=item[6],
                                         longitude=item[7],
@@ -264,3 +259,19 @@ def insert_promo(pul, message):
         add_promokod(promokod, message.from_user.id, 10)
     elif 15000 <= pul:
         add_promokod(promokod, message.from_user.id, 15)
+
+
+def time_markups(date):
+    from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+    time_markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=4)
+    if date == str(datetime.datetime.now().date()):
+        for i in range(10, 22):
+            if i > datetime.datetime.now().time().hour:
+                button = KeyboardButton(text=str(i + 1) + ':00')
+                time_markup.insert(button)
+    else:
+        for i in range(10, 22):
+            button = KeyboardButton(text=str(i + 1) + ':00')
+            time_markup.insert(button)
+    time_markup.add("⬅️ Назад")
+    return time_markup

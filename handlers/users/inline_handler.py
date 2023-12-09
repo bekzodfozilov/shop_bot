@@ -19,7 +19,7 @@ def items(kategory):
 
 
 @dp.inline_handler(text=get_kategory())
-async def inline(inline: types.InlineQuery, state: FSMContext):
+async def inline(inline: types.InlineQuery):
     msg = []
     for i in items(inline.query):
         msg.append((

@@ -280,7 +280,7 @@ def create_count_id(user_id):
         if u_id in list:
             pass
         else:
-            max_id = db.execute('select max(id) from count_item', fetchone=True)
+            max_id = db.execute('select max(id) from count_items', fetchone=True)
             for i in max_id:
                 if None == i:
                     db.execute(f"""insert into count_items(id, user_id) 

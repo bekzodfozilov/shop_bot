@@ -30,9 +30,14 @@ async def item(message: types.Message):
     for j in get_korzina():
         if j[2] == str(message.from_user.id) and j[1] == item_id:
             count = j[3]
-    await message.answer_photo(photo=i[6],
-                               caption=f"{i[2]} - {i[4]}KZT\n\n{i[3]}\n\nОсталось🔄 - {i[5]}",
-                               reply_markup=add_markup(item_id, count, get_korzina()))
+    if str(message.from_id) in ADMINS:
+        await message.answer_photo(photo=i[6],
+                                   caption=f"{i[2]} - {i[4]}KZT\n\n{i[3]}\n\nОсталось🔄 - {i[5]}",
+                                   reply_markup=add_markup(item_id, count, get_korzina()))
+    else:
+        await message.answer_photo(photo=i[6],
+                                   caption=f"{i[2]} - {i[4]}KZT\n\n{i[3]}",
+                                   reply_markup=add_markup(item_id, count, get_korzina()))
 
 
 @dp.callback_query_handler(product_cb.filter(action='_'))

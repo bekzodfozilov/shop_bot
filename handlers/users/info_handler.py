@@ -7,6 +7,7 @@ from middlewares.my_location import location
 
 @dp.message_handler(text='ℹ️ Информация')
 async def info(message: types.Message):
+    await message.delete()
     await message.answer(
         "Этот бот был создан для того чтобы заказать вещи любого вида в том числе:\n"
         "<b>Еда, Спорт, Техника, Мебели</b>\n"

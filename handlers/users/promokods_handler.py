@@ -6,6 +6,7 @@ from query_data.config import get_promokod
 
 @dp.message_handler(text='📩 Мои промокоды')
 async def promocods_handler(message: types.Message):
+    await message.delete()
     promocod = str()
     list = get_promokod(message.from_user.id)
     if len(list) == 0:

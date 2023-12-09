@@ -13,6 +13,7 @@ from query_data.config import my_basket, delete_item, clear_korzina, get_count_k
 
 @dp.message_handler(text='🛒 Моя Корзина')
 async def basket(message: types.Message):
+    await message.delete()
     i = my_basket(str(message.from_user.id))
     if len(i) == 0:
         if str(message.from_user.id) in ADMINS:
@@ -38,6 +39,7 @@ async def basket(message: types.Message):
 
 @dp.message_handler(text='🧹 Очистить корзину')
 async def clear_basket(message: types.Message):
+    await message.delete()
     delete_item(message.from_user.id)
     if str(message.from_user.id) in ADMINS:
         await message.answer('Ваша корзина очишена!', reply_markup=menu_markup_def_admin)

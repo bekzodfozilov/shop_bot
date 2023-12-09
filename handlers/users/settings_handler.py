@@ -11,6 +11,7 @@ from states.setting import Name, Number
 
 @dp.message_handler(text='⚙️ Настройки')
 async def top_products(message: types.Message):
+    await message.delete()
     info = get_info_user(message.from_user.id)
     await message.answer(f"<b><i>{info[1]} | {info[2]}</i></b>", reply_markup=markup)
 
