@@ -18,5 +18,6 @@ async def tovar(message: types.Message):
     await message.answer('Выберите Нужную себе Категорию', reply_markup=ReplyKeyboardRemove())
     await message.delete()
     await message.answer("Нажмите", reply_markup=inline_item)
+    db.execute("delete from item where count = 0", commit=True)
 
 
